@@ -18,10 +18,11 @@ More functionality to be added.
 
 ## Weights and Bias cache
 Weights and biases as well as number of epochs are stored in the `/cache` folder.
-
+```
 📦cache
  ┣ 📜bias_0.npy
  ┣ 📜bias_1.npy
  ┣ 📜epochs
  ┣ 📜weights_0.npy
  ┗ 📜weights_1.npy 
+```
