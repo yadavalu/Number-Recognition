@@ -1,6 +1,9 @@
 # Tensorflow Number Recognition
 Neutral Network using Tensorflow for Printed and Handwritten Number Recognition trained from MNIST database
 
+Checkout branch ´bare-bones´ to view the same project built from scratch without Tensorflow.
+Check [bare-bones](https://github.com/yadavalu/Number-Recognition/tree/bare-bones)
+
 ## Train and Test
 To train the model, run
 ```
