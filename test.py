@@ -1,76 +1,64 @@
-import glob, os, sys
-
+import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation
 
-import imageio.v2 as imageio
 
-import utils as u
-from data.read import get_mnist
+(_1, _2), (test_images, test_labels) = tf.keras.datasets.mnist.load_data()
+mnist = test_images[:1000]
 
-# Load the weights and biases from the trained model
-weights = [
-    np.load("./cache/weights_0.npy"),
-    np.load("./cache/weights_1.npy"),
-]
+# Reshape
+test_labels = test_labels[:1000]
 
-bias = [
-    np.load("./cache/bias_0.npy"),
-    np.load("./cache/bias_1.npy"),
-]
+test_images = test_images[:1000].reshape(-1, 28 * 28) / 255.0
 
-np.set_printoptions(threshold=np.inf)
+model = tf.keras.models.load_model('my_model.keras')
 
-# Load the MNIST dataset
-image, label = get_mnist()
+y_pred = model.predict(test_images)
+loss, acc = model.evaluate(test_images, test_labels)
+print('Restored model, accuracy: {:5.2f}%'.format(100 * acc))
+print('Restored model, loss: {:5.2f}'.format(loss))
 
-# Other dataset:
-for i in glob.glob("./data/2828*"):
-    img_array = imageio.imread(i, mode="F") # as_gray=True (Deprication)
-    # reshape from 28x28 to list of 784 values, invert values
-    img_data  = 255.0 - img_array.reshape(784)
-    # then scale data to range from 0.01 to 1.0
-    img = (img_data / 255.0 * 0.99) + 0.01
+print(mnist.shape)
 
-    plt.imshow(img.reshape(28, 28), cmap="Greys")
+def model_predict(im: np.array):
+    pred_arr = model.predict(im.reshape(-1, 28 * 28) / 255.0)
+    max = tf.reduce_max(pred_arr)
+    return tf.squeeze(tf.where(pred_arr == max))[1]
 
-    img.shape += (1,)
+
+fig, ax = plt.subplots()
+graph = ax.imshow(np.array(mnist[0], dtype='float').reshape(28, 28), cmap='gray')
+title = ax.text(0.5, 0.95, "", bbox={'facecolor':'w', 'alpha':0.5, 'pad':5},
+                transform=ax.transAxes, ha="center")
+
+
+def update(frame):
+    im = mnist[frame]
+    prediction = model_predict(im)
+    actual = test_labels[frame]
     
-    hidden = u.sigmoid(bias[0] + weights[0] @ img.reshape(784, 1))
-    output = u.sigmoid(bias[1] + weights[1] @ hidden)
-    print(output)
+    if prediction != actual:
+        fig.set_facecolor('#f8baba')
+    else:
+        fig.set_facecolor('#baf8ba')
 
-    plt.title(f"Number estimated by neural network: {output.argmax()}")
-    plt.show()
+    title.set_text(
+        "Model prediction: {pred}, actual: {act}"
+        .format(
+            pred=prediction, 
+            act=actual
+        )
+    )
 
-while True:
-    try:
-        try:
-            try:
-                index = int(input("Enter a number (0 - 59999): "))
-            except ValueError:
-                print("Error: Invalid input. Please enter a number.")
-                continue
-            img = image[index]
-            plt.imshow(img.reshape(28, 28), cmap="Greys")
+    image = np.array(im, dtype='float')
+    pixels = image.reshape((28, 28))
+    graph.set_data(pixels)
 
-            img.shape += (1,)
-            # Forward propagation input -> hidden
-            h_pre = bias[0] + weights[0] @ img.reshape(784, 1)
-            h = 1 / (1 + np.exp(-h_pre))
-            # Forward propagation hidden -> output
-            o_pre = bias[1] + weights[1] @ h
-            o = 1 / (1 + np.exp(-o_pre))
-            print(o)
+anim = FuncAnimation(fig, update, frames=None)
+plt.show()
 
-            plt.title(f"Number estimated by neural network: {o.argmax()}")
-            plt.show()
 
-        except IndexError:
-            print("Error: Number exceeded 59999")
-    except KeyboardInterrupt:
-        print()
-        exit(0)
-    except EOFError:
-        print()
-        exit(0)
+
+
+
